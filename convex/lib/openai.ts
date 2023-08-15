@@ -13,17 +13,20 @@ export async function chatCompletion(
     );
   }
 
-  body.model = body.model ?? 'gpt-3.5-turbo-16k';
+  // const isOpenRouter = process.env.OPENAI_API_BASE === 'https://openrouter.ai/api/v1';
+  body.model = body.model ?? (process.env.OPENROUTER_API_BASE ? 'openai/gpt-3.5-turbo-16k' : 'gpt-3.5-turbo-16k');
   const {
     result: json,
     retries,
     ms,
   } = await retryWithBackoff(async () => {
-    const result = await fetch('https://api.openai.com/v1/chat/completions', {
+    const openAIBaseURL = process.env.OPENROUTER_API_BASE || 'https://api.openai.com/v1';
+    const result = await fetch(openAIBaseURL + '/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + process.env.OPENAI_API_KEY,
+        ...(process.env.OPENROUTER_API_KEY ? {'HTTP-Referer': 'https://convex.dev'} : {}),
+        Authorization: 'Bearer ' + process.env.OPENROUTER_API_KEY ?? process.env.OPENAI_API_KEY,
       },
 
       body: JSON.stringify(body),
@@ -217,6 +220,14 @@ export interface CreateChatCompletionRequest {
    * @memberof CreateChatCompletionRequest
    */
   model:
+    | 'openai/gpt-4'
+    | 'openai/gpt-4-0613'
+    | 'openai/gpt-4-32k'
+    | 'openai/gpt-4-32k-0613'
+    | 'openai/gpt-3.5-turbo'
+    | 'openai/gpt-3.5-turbo-0613'
+    | 'openai/gpt-3.5-turbo-16k' // <- our default
+    | 'openai/gpt-3.5-turbo-16k-0613'
     | 'gpt-4'
     | 'gpt-4-0613'
     | 'gpt-4-32k'
